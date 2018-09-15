@@ -7,7 +7,7 @@
 
 error_reporting(E_ERROR | E_PARSE);
 
-include "mysql_conf.inc";
+include 'mysql_conf.inc';
 
 $currentUrl = $argv[1];
 
@@ -21,8 +21,8 @@ function crawl($url)
 
     if (!alreadyCrawled(cleanUrl($url))) {
         $requestResponse = getContent($url);
-        if ($requestResponse[1] != 404) {
-            print "Download Size: " . $requestResponse[2];
+        if ($requestResponse[1] !== 404) {
+            print 'Download Size: ' . $requestResponse[2];
 
             $htmlPath = createPathFromHtml($requestResponse[0]);
             $urlInfo = getUrlInfo($htmlPath);
@@ -35,15 +35,13 @@ function crawl($url)
 
     $currentUrl = getFirstFromQueue(); // set new
     removeFromQueue($currentUrl);
-
-    return;
 }
 
 
 function getContent($url)
 {
     $curl = curl_init($url);
-    curl_setopt($curl, CURLOPT_USERAGENT, "Googlebot/2.1 (+http://www.google.com/bot.html)");
+    curl_setopt($curl, CURLOPT_USERAGENT, 'Googlebot/2.1 (+http://www.google.com/bot.html)');
     curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($curl, CURLOPT_BINARYTRANSFER, true);
@@ -59,23 +57,29 @@ function getUrlInfo($path)
 {
     $urlInfo = [];
 
-    $urlInfo["title"] = strip_tags($path->query("//title")[0]->textContent);
-    foreach ($path->query("//html") as $language) $urlInfo["language"] = strip_tags($language->getAttribute("lang"));
-    foreach ($path->query("/html/head/meta[@name=\"description\"]") as $description) $urlInfo["description"] = strip_tags($description->getAttribute("content"));
+    $urlInfo['title'] = strip_tags($path->query('//title')[0]->textContent);
+    foreach ($path->query('//html') as $language) {
+        $urlInfo['language'] = strip_tags($language->getAttribute('lang'));
+    }
+    foreach ($path->query('/html/head/meta[@name="description"]') as $description) {
+        $urlInfo['description'] = strip_tags($description->getAttribute('content'));
+    }
 
     // Fix empty information
-    if (!(isset($urlInfo["description"]))) {
-        $urlInfo["description"] = "";
-        foreach ($path->query("//p") as $text) {
-            if (strlen($urlInfo["description"]) < 350)
-                $urlInfo["description"] .= $text->textContent . " ";
+    if (!isset($urlInfo['description'])) {
+        $urlInfo['description'] = '';
+        foreach ($path->query('//p') as $text) {
+            if (strlen($urlInfo['description']) < 350) {
+                $urlInfo['description'] .= $text->textContent . ' ';
+            }
         }
     }
 
-    if (empty($urlInfo["title"])) {
-        $urlInfo["title"] = "";
-        if (strlen($urlInfo["title"]) < 350)
-            $urlInfo["title"] .= $path->query("//h1")[0]->textContent . " ";
+    if (empty($urlInfo['title'])) {
+        $urlInfo['title'] = '';
+        if (strlen($urlInfo['title']) < 350) {
+            $urlInfo['title'] .= $path->query('//h1')[0]->textContent . ' ';
+        }
     }
 
     return $urlInfo;
@@ -85,9 +89,9 @@ function getLinks($path)
 {
     $allLinks = [];
 
-    foreach ($path->query("//a") as $ink) {
-        $href = cleanUrl($ink->getAttribute("href"));
-        array_push($allLinks, $href);
+    foreach ($path->query('//a') as $ink) {
+        $href = cleanUrl($ink->getAttribute('href'));
+        $allLinks[] = $href;
     }
 
     return array_unique($allLinks);
@@ -99,14 +103,20 @@ function cleanUrl($url)
 
     $url = ltrim($url);
 
-    if (!(substr($url, 0, 4) === "http")) {
-        if (substr($url, 0, 3) === "www") $url = "http://" . $url;
-        else if (substr($url, 0, 1) === "/") $url = $currentUrl . $url;
-        else $url = $currentUrl . $url;
+    if (!(strpos($url, 'http') === 0)) {
+        if (strpos($url, 'www') === 0) {
+            $url = 'http://' . $url;
+        } else if (strpos($url, '/') === 0) {
+            $url = $currentUrl . $url;
+        } else {
+            $url = $currentUrl . $url;
+        }
     }
 
     // if it's pure domain without slash (prevents duplicate domains because of slash)
-    if (preg_match('/\w+\.\w{2,3}$/', $url)) $url = $url . "/";
+    if (preg_match('/\w+\.\w{2,3}$/', $url)) {
+        $url .= '/';
+    }
 
     // strip some things
     $url = preg_replace('/([^:])(\/{2,})/', '$1/', $url); // double slashes
@@ -128,10 +138,9 @@ function createPathFromHtml($content)
 function getFirstFromQueue()
 {
     $conn = initDbConnection();
-    $checkStmt = $conn->prepare('SELECT url FROM queue LIMIT 1');
-    $checkStmt->execute();
+    $checkStmt = $conn->query('SELECT url FROM queue LIMIT 1');
 
-    return $checkStmt->fetchAll(PDO::FETCH_ASSOC)[0]["url"];
+    return $checkStmt->fetchAll(PDO::FETCH_ASSOC)[0]['url'];
 }
 
 function writeToQueue($urls)
@@ -165,9 +174,9 @@ function saveData($urlInfo)
 
     print $currentUrl . "\n";
 
-    $title = isset($urlInfo["title"]) ? $urlInfo["title"] : "";
-    $description = isset($urlInfo["description"]) ? $urlInfo["description"] : "";
-    $language = isset($urlInfo["language"]) ? $urlInfo["language"] : "en";
+    $title = $urlInfo['title'] ?? '';
+    $description = $urlInfo['description'] ?? '';
+    $language = $urlInfo['language'] ?? 'en';
     $hash = md5($currentUrl);
 
     try {
