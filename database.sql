@@ -32,7 +32,6 @@ CREATE TABLE `queue` (
   KEY `queue_hash_index` (`hash`)
 )
   ENGINE = InnoDB
-  AUTO_INCREMENT = 5504
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -49,7 +48,6 @@ CREATE TABLE `url_data` (
   `url` varchar(2083) COLLATE utf8mb4_unicode_ci NOT NULL,
   `title` varchar(60) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` varchar(350) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `icon` varchar(256) COLLATE utf8mb4_unicode_ci NOT NULL,
   `lang` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL,
   `hash` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
@@ -57,7 +55,6 @@ CREATE TABLE `url_data` (
   KEY `url_data_hash_index` (`hash`)
 )
   ENGINE = InnoDB
-  AUTO_INCREMENT = 59
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -71,4 +68,4 @@ CREATE TABLE `url_data` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2018-09-15 17:46:14
+-- Dump completed on 2018-09-15 20:02:58
