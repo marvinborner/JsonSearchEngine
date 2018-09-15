@@ -21,7 +21,7 @@ function crawl($url)
 
     if (!alreadyCrawled(cleanUrl($url))) {
         $requestResponse = getContent($url);
-        if ($requestResponse[1] !== 404) {
+        if (preg_match('/2\d\d/', $requestResponse[1])) {
             print 'Download Size: ' . $requestResponse[2];
 
             $htmlPath = createPathFromHtml($requestResponse[0]);
@@ -42,15 +42,19 @@ function getContent($url)
 {
     $curl = curl_init($url);
     curl_setopt($curl, CURLOPT_USERAGENT, 'Googlebot/2.1 (+http://www.google.com/bot.html)');
+    curl_setopt($curl, CURLOPT_TIMEOUT, 5);
     curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($curl, CURLOPT_BINARYTRANSFER, true);
     $content = curl_exec($curl);
     $responseCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
     $downloadSize = curl_getinfo($curl, CURLINFO_SIZE_DOWNLOAD) / 1000 . "KB\n";
+    if (preg_match('~Location: (.*)~i', $content, $match)) {
+        $updatedUrl = trim($match[1]); // update url on 301/302
+    }
     curl_close($curl);
 
-    return [$content, $responseCode, $downloadSize];
+    return [$content, $responseCode, $downloadSize, $updatedUrl ?? ''];
 }
 
 function getUrlInfo($path)
@@ -150,11 +154,19 @@ function writeToQueue($urls)
     foreach ($urls as $url) {
         $hash = md5($url);
 
+        print "\t\e[96mChecking if url already has been crawled " . $url . "\n";
         $checkStmt = $conn->prepare('SELECT null FROM url_data where hash = :hash');
         $checkStmt->execute(['hash' => $hash]);
         if ($checkStmt->rowCount() === 0) {
             $stmt = $conn->prepare('INSERT IGNORE INTO queue (url, hash) VALUES (:url, :hash)');
             $stmt->execute([':url' => $url, 'hash' => $hash]);
+            if ($stmt->rowCount() > 0) {
+                print "\t\e[92mQueueing url " . $url . "\n";
+            } else {
+                print "\t\e[91mUrl already queued " . $url . "\n";
+            }
+        } else {
+            print "\t\e[91mUrl already crawled " . $url . "\n";
         }
     }
 }
@@ -172,7 +184,7 @@ function saveData($urlInfo)
 {
     global $currentUrl;
 
-    print $currentUrl . "\n";
+    print "\e[96mFinished previous url - crawling: " . $currentUrl . "\n";
 
     $title = $urlInfo['title'] ?? '';
     $description = $urlInfo['description'] ?? '';
