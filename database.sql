@@ -51,7 +51,9 @@ CREATE TABLE `url_data` (
   `hash` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `url_data_hash_uindex` (`hash`),
-  KEY `url_data_hash_index` (`hash`)
+  KEY `url_data_hash_index` (`hash`),
+  FULLTEXT KEY `url_data_title_index` (`title`),
+  FULLTEXT KEY `url_data_description_index` (`description`)
 )
   ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
@@ -67,4 +69,4 @@ CREATE TABLE `url_data` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2018-09-15 23:44:21
+-- Dump completed on 2018-09-16  0:57:12
