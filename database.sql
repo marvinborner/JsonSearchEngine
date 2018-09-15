@@ -28,8 +28,13 @@ CREATE TABLE `queue` (
   `hash` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `queue_id_uindex` (`id`),
-  UNIQUE KEY `queue_hash_uindex` (`hash`)
-) ENGINE=InnoDB AUTO_INCREMENT=557 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE KEY `queue_hash_uindex` (`hash`),
+  KEY `queue_hash_index` (`hash`)
+)
+  ENGINE = InnoDB
+  AUTO_INCREMENT = 5504
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -48,8 +53,13 @@ CREATE TABLE `url_data` (
   `lang` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL,
   `hash` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `url_data_hash_uindex` (`hash`)
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE KEY `url_data_hash_uindex` (`hash`),
+  KEY `url_data_hash_index` (`hash`)
+)
+  ENGINE = InnoDB
+  AUTO_INCREMENT = 59
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -61,4 +71,4 @@ CREATE TABLE `url_data` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2018-09-15 15:12:33
+-- Dump completed on 2018-09-15 17:46:14
