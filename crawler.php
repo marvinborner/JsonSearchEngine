@@ -186,8 +186,8 @@ function saveData($urlInfo)
 
     print "\e[96mFinished previous url - crawling: " . $currentUrl . "\n";
 
-    $title = $urlInfo['title'] ?? '';
-    $description = $urlInfo['description'] ?? '';
+    $title = mb_convert_encoding($urlInfo['title'] ?? '', 'Windows-1252', 'UTF-8');
+    $description = mb_convert_encoding($urlInfo['description'] ?? '', 'Windows-1252', 'UTF-8');
     $language = $urlInfo['language'] ?? 'en';
     $hash = md5($currentUrl);
 
@@ -212,7 +212,7 @@ function alreadyCrawled($url)
 function initDbConnection()
 {
     global $servername, $dbname, $username, $password;
-    $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
+    $conn = new PDO("mysql:host=$servername;dbname=$dbname;charset=utf8", $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     return $conn;
 }
