@@ -59,10 +59,24 @@ function getUrlInfo($path)
 {
     $urlInfo = [];
 
-    foreach ($path->query("//html") as $html) $urlInfo["language"] = $html->getAttribute("lang");
-    foreach ($path->query("//meta") as $meta) $urlInfo[$meta->getAttribute("name")] = $meta->getAttribute("content");
-    foreach ($path->query("//link") as $link) $urlInfo[$link->getAttribute("rel")] = $link->getAttribute("href");
-    $urlInfo["title"] = $path->query("//title")[0]->textContent;
+    $urlInfo["title"] = strip_tags($path->query("//title")[0]->textContent);
+    foreach ($path->query("//html") as $language) $urlInfo["language"] = strip_tags($language->getAttribute("lang"));
+    foreach ($path->query("/html/head/meta[@name=\"description\"]") as $description) $urlInfo["description"] = strip_tags($description->getAttribute("content"));
+
+    // Fix empty information
+    if (!(isset($urlInfo["description"]))) {
+        $urlInfo["description"] = "";
+        foreach ($path->query("//p") as $text) {
+            if (strlen($urlInfo["description"]) < 350)
+                $urlInfo["description"] .= $text->textContent . " ";
+        }
+    }
+
+    if (empty($urlInfo["title"])) {
+        $urlInfo["title"] = "";
+        if (strlen($urlInfo["title"]) < 350)
+            $urlInfo["title"] .= $path->query("//h1")[0]->textContent . " ";
+    }
 
     return $urlInfo;
 }
@@ -153,14 +167,13 @@ function saveData($urlInfo)
 
     $title = isset($urlInfo["title"]) ? $urlInfo["title"] : "";
     $description = isset($urlInfo["description"]) ? $urlInfo["description"] : "";
-    $icon = isset($urlInfo["icon"]) ? $urlInfo["icon"] : "";
     $language = isset($urlInfo["language"]) ? $urlInfo["language"] : "en";
     $hash = md5($currentUrl);
 
     try {
         $conn = initDbConnection();
-        $stmt = $conn->prepare('INSERT IGNORE INTO url_data (url, title, description, icon, lang, hash) VALUES (:url, :title, :description, :icon, :lang, :hash)');
-        $stmt->execute([':url' => $currentUrl, ':title' => $title, ':description' => $description, ':icon' => $icon, ':lang' => $language, ':hash' => $hash]);
+        $stmt = $conn->prepare('INSERT IGNORE INTO url_data (url, title, description, lang, hash) VALUES (:url, :title, :description, :lang, :hash)');
+        $stmt->execute([':url' => $currentUrl, ':title' => $title, ':description' => $description, ':lang' => $language, ':hash' => $hash]);
     } catch (PDOException $e) {
         print $e->getMessage();
     }
