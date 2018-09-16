@@ -5,6 +5,7 @@
  * Time: 23:48
  */
 
+set_time_limit(3600000);
 error_reporting(E_ERROR | E_PARSE);
 
 include 'mysql_conf.inc';
@@ -21,7 +22,7 @@ function crawl($url)
 
     if (!alreadyCrawled(cleanUrl($url))) {
         $requestResponse = getContent($url);
-        if (preg_match('/2\d\d/', $requestResponse[1])) {
+        if (preg_match('/2\d\d/', $requestResponse[1])) { // success
             print 'Download Size: ' . $requestResponse[2];
 
             $htmlPath = createPathFromHtml($requestResponse[0]);
@@ -30,10 +31,16 @@ function crawl($url)
 
             writeToQueue($allLinks);
             saveData($urlInfo);
+
+            $currentUrl = getFromQueue('ASC'); // set new from start
+        } else {
+            if ($requestResponse[1] === 429) {
+                $currentUrl = getFromQueue('DESC'); // set new from end
+            }
+            print "\t\e[91mError " . $requestResponse[1] . "\n";
         }
     }
 
-    $currentUrl = getFirstFromQueue(); // set new
     removeFromQueue($currentUrl);
 }
 
@@ -139,10 +146,10 @@ function createPathFromHtml($content)
     return new DOMXPath($dom);
 }
 
-function getFirstFromQueue()
+function getFromQueue($sort)
 {
     $conn = initDbConnection();
-    $checkStmt = $conn->query('SELECT url FROM queue LIMIT 1');
+    $checkStmt = $conn->query('SELECT url FROM queue ORDER BY id ' . $sort . ' LIMIT 1');
 
     return $checkStmt->fetchAll(PDO::FETCH_ASSOC)[0]['url'];
 }
@@ -155,7 +162,7 @@ function writeToQueue($urls)
         $hash = md5($url);
 
         print "\t\e[96mChecking if url already has been crawled " . $url . "\n";
-        $checkStmt = $conn->prepare('SELECT null FROM url_data where hash = :hash');
+        $checkStmt = $conn->prepare('SELECT null FROM url_data WHERE hash = :hash');
         $checkStmt->execute(['hash' => $hash]);
         if ($checkStmt->rowCount() === 0) {
             $stmt = $conn->prepare('INSERT IGNORE INTO queue (url, hash) VALUES (:url, :hash)');
@@ -176,7 +183,7 @@ function removeFromQueue($url)
     $hash = md5($url);
 
     $conn = initDbConnection();
-    $checkStmt = $conn->prepare('DELETE FROM queue where hash = :hash');
+    $checkStmt = $conn->prepare('DELETE FROM queue WHERE hash = :hash');
     $checkStmt->execute(['hash' => $hash]);
 }
 
@@ -204,7 +211,7 @@ function alreadyCrawled($url)
 {
     $hash = md5($url);
     $conn = initDbConnection();
-    $checkStmt = $conn->prepare('SELECT null FROM url_data where hash = :hash');
+    $checkStmt = $conn->prepare('SELECT null FROM url_data WHERE hash = :hash');
     $checkStmt->execute(['hash' => $hash]);
     return $checkStmt->rowCount() !== 0; // return true if already crawled
 }
