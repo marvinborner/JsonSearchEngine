@@ -197,7 +197,7 @@ function urlHasError($url)
     $hash = md5($url);
 
     $conn = initDbConnection();
-    $checkStmt = $conn->prepare('INSERT INTO error_url (url, hash) VALUES (:url, :hash)');
+    $checkStmt = $conn->prepare('INSERT IGNORE INTO error_url (url, hash) VALUES (:url, :hash)');
     $checkStmt->execute([':url' => $url, 'hash' => $hash]);
 }
 
