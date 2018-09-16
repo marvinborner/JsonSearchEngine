@@ -10,7 +10,7 @@ error_reporting(E_ERROR | E_PARSE);
 
 include 'mysql_conf.inc';
 
-$currentUrl = $argv[1];
+$currentUrl = $argv[1] ?? '';
 
 while (true) {
     crawl($currentUrl);
@@ -20,7 +20,12 @@ function crawl($url)
 {
     global $currentUrl;
 
-    if (!alreadyCrawled(cleanUrl($url))) {
+    if (alreadyCrawled(cleanUrl($url))) {
+        print "\t\e[91mUrl already crawled " . $url . "\n";
+
+        removeFromQueue($currentUrl);
+        $currentUrl = getFromQueue('ASC');
+    } else {
         $requestResponse = getContent($url);
         if (preg_match('/2\d\d/', $requestResponse[1])) { // success
             print 'Download Size: ' . $requestResponse[2];
@@ -32,23 +37,23 @@ function crawl($url)
             writeToQueue($allLinks);
             saveData($urlInfo);
 
+            removeFromQueue($currentUrl);
             $currentUrl = getFromQueue('ASC'); // set new from start
         } else {
-            if ($requestResponse[1] === 429) {
-                $currentUrl = getFromQueue('DESC'); // set new from end
-            }
-            print "\t\e[91mError " . $requestResponse[1] . "\n";
+            print "\t\e[91mError " . $requestResponse[1] . ' ' . $currentUrl . "\n";
+
+            urlHasError($currentUrl); // prevents re-crawling of error url
+            removeFromQueue($currentUrl);
+            $currentUrl = getFromQueue('DESC'); // set new from end
         }
     }
-
-    removeFromQueue($currentUrl);
 }
 
 
 function getContent($url)
 {
     $curl = curl_init($url);
-    curl_setopt($curl, CURLOPT_USERAGENT, 'Googlebot/2.1 (+http://www.google.com/bot.html)');
+    curl_setopt($curl, CURLOPT_USERAGENT, 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)');
     curl_setopt($curl, CURLOPT_TIMEOUT, 5);
     curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -100,8 +105,8 @@ function getLinks($path)
 {
     $allLinks = [];
 
-    foreach ($path->query('//a') as $ink) {
-        $href = cleanUrl($ink->getAttribute('href'));
+    foreach ($path->query('//a') as $link) {
+        $href = cleanUrl($link->getAttribute('href'));
         $allLinks[] = $href;
     }
 
@@ -114,7 +119,7 @@ function cleanUrl($url)
 
     $url = ltrim($url);
 
-    if (!(strpos($url, 'http') === 0)) {
+    if (filter_var($url, FILTER_VALIDATE_URL) === false && !(strpos($url, 'http') === 0)) {
         if (strpos($url, 'www') === 0) {
             $url = 'http://' . $url;
         } else if (strpos($url, '/') === 0) {
@@ -184,7 +189,16 @@ function removeFromQueue($url)
 
     $conn = initDbConnection();
     $checkStmt = $conn->prepare('DELETE FROM queue WHERE hash = :hash');
-    $checkStmt->execute(['hash' => $hash]);
+    $checkStmt->execute([':hash' => $hash]);
+}
+
+function urlHasError($url)
+{
+    $hash = md5($url);
+
+    $conn = initDbConnection();
+    $checkStmt = $conn->prepare('INSERT INTO error_url (url, hash) VALUES (:url, :hash)');
+    $checkStmt->execute([':url' => $url, 'hash' => $hash]);
 }
 
 function saveData($urlInfo)
@@ -211,8 +225,8 @@ function alreadyCrawled($url)
 {
     $hash = md5($url);
     $conn = initDbConnection();
-    $checkStmt = $conn->prepare('SELECT null FROM url_data WHERE hash = :hash');
-    $checkStmt->execute(['hash' => $hash]);
+    $checkStmt = $conn->prepare('(SELECT null FROM url_data WHERE hash = :hash) UNION (SELECT null FROM error_url WHERE hash = :hash)');
+    $checkStmt->execute([':hash' => $hash]);
     return $checkStmt->rowCount() !== 0; // return true if already crawled
 }
 

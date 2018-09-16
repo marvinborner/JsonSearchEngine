@@ -16,6 +16,27 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `error_url`
+--
+
+DROP TABLE IF EXISTS `error_url`;
+/*!40101 SET @saved_cs_client = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `error_url` (
+  `id`   int(8)                                   NOT NULL AUTO_INCREMENT,
+  `url`  varchar(2083) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `hash` varchar(32) COLLATE utf8mb4_unicode_ci   NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `error_url_hash_uindex` (`hash`),
+  UNIQUE KEY `error_url_id_uindex` (`id`),
+  KEY `error_url_hash_index` (`hash`)
+)
+  ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `queue`
 --
 
@@ -69,4 +90,4 @@ CREATE TABLE `url_data` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2018-09-16  0:57:12
+-- Dump completed on 2018-09-16 11:28:48
