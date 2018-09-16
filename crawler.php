@@ -24,9 +24,10 @@ function crawl($url)
         print "\t\e[91mUrl already crawled " . $url . "\n";
 
         removeFromQueue($currentUrl);
-        $currentUrl = getFromQueue('ASC');
+        $currentUrl = getFromQueue('DESC');
     } else {
         $requestResponse = getContent($url);
+        $currentUrl = $requestResponse[3];
         if (preg_match('/2\d\d/', $requestResponse[1])) { // success
             print 'Download Size: ' . $requestResponse[2];
 
@@ -35,16 +36,16 @@ function crawl($url)
             $allLinks = getLinks($htmlPath);
 
             writeToQueue($allLinks);
-            saveData($urlInfo);
+            saveData($urlInfo, $currentUrl);
 
             removeFromQueue($currentUrl);
-            $currentUrl = getFromQueue('ASC'); // set new from start
+            $currentUrl = getFromQueue('DESC'); // set new from start
         } else {
             print "\t\e[91mError " . $requestResponse[1] . ' ' . $currentUrl . "\n";
 
             urlHasError($currentUrl); // prevents re-crawling of error url
             removeFromQueue($currentUrl);
-            $currentUrl = getFromQueue('DESC'); // set new from end
+            $currentUrl = getFromQueue('ASC'); // set new from end
         }
     }
 }
@@ -66,7 +67,7 @@ function getContent($url)
     }
     curl_close($curl);
 
-    return [$content, $responseCode, $downloadSize, $updatedUrl ?? ''];
+    return [$content, $responseCode, $downloadSize, $updatedUrl ?? $url];
 }
 
 function getUrlInfo($path)
@@ -106,8 +107,11 @@ function getLinks($path)
     $allLinks = [];
 
     foreach ($path->query('//a') as $link) {
-        $href = cleanUrl($link->getAttribute('href'));
-        $allLinks[] = $href;
+        $linkHref = $link->getAttribute('href');
+        if ($linkHref !== 'javascript:void(0)') {
+            $href = cleanUrl($linkHref);
+            $allLinks[] = $href;
+        }
     }
 
     return array_unique($allLinks);
@@ -117,29 +121,37 @@ function cleanUrl($url)
 {
     global $currentUrl;
 
-    $url = ltrim($url);
+    $newUrl = ltrim($url); // trim whitespaces
 
-    if (filter_var($url, FILTER_VALIDATE_URL) === false && !(strpos($url, 'http') === 0)) {
-        if (strpos($url, 'www') === 0) {
-            $url = 'http://' . $url;
+    // normally only for links/href
+    if (filter_var($newUrl, FILTER_VALIDATE_URL) === false || (strpos($newUrl, 'http') !== 0)) {
+        if (strpos($newUrl, 'www') === 0) {
+            $newUrl = 'http://' . $newUrl; // fixes eg. "www.example.com" by adding http:// at beginning
+        } else if ($newUrl === 'javascript:void') {
+            $newUrl = '';
         } else if (strpos($url, '/') === 0) {
-            $url = $currentUrl . $url;
+            $parsedUrl = parse_url($currentUrl);
+            $newUrl = $parsedUrl['scheme'] . '://' . $parsedUrl['host'] . $newUrl; // fixes eg. "/sub_dir" by removing path and adding new path
         } else {
-            $url = $currentUrl . $url;
+            $newUrl = $currentUrl . $newUrl; // fixes eg. "sub_dir" by adding currently crawled url at beginning
         }
     }
 
     // if it's pure domain without slash (prevents duplicate domains because of slash)
-    if (preg_match('/\w+\.\w{2,3}$/', $url)) {
-        $url .= '/';
+    if (preg_match('/\w+\.\w{2,3}$/', $newUrl)) {
+        $newUrl .= '/';
     }
 
     // strip some things
-    $url = preg_replace('/([^:])(\/{2,})/', '$1/', $url); // double slashes
-    $url = strtok($url, '?'); // parameters
-    $url = strtok($url, '#'); // hash fragments
+    $newUrl = preg_replace('/([^:])(\/{2,})/', '$1/', $newUrl); // double slashes
+    $newUrl = strtok($newUrl, '?'); // parameters
+    $newUrl = strtok($newUrl, '#'); // hash fragments
 
-    return $url;
+    if ($url !== $newUrl) {
+        print "\t\e[92mChanged " . $url . ' to ' . $newUrl . "\n";
+    }
+
+    return $newUrl;
 }
 
 function createPathFromHtml($content)
@@ -153,6 +165,7 @@ function createPathFromHtml($content)
 
 function getFromQueue($sort)
 {
+    print "\t\e[96mStarting at " . ($sort === 'DESC' ? 'bottom' : 'top') . " of queue\n";
     $conn = initDbConnection();
     $checkStmt = $conn->query('SELECT url FROM queue ORDER BY id ' . $sort . ' LIMIT 1');
 
@@ -164,21 +177,23 @@ function writeToQueue($urls)
     $conn = initDbConnection();
 
     foreach ($urls as $url) {
-        $hash = md5($url);
+        if ($url !== '') {
+            $hash = md5($url);
 
-        print "\t\e[96mChecking if url already has been crawled " . $url . "\n";
-        $checkStmt = $conn->prepare('SELECT null FROM url_data WHERE hash = :hash');
-        $checkStmt->execute(['hash' => $hash]);
-        if ($checkStmt->rowCount() === 0) {
-            $stmt = $conn->prepare('INSERT IGNORE INTO queue (url, hash) VALUES (:url, :hash)');
-            $stmt->execute([':url' => $url, 'hash' => $hash]);
-            if ($stmt->rowCount() > 0) {
-                print "\t\e[92mQueueing url " . $url . "\n";
+            print "\t\e[96mChecking if url already has been crawled " . $url . "\n";
+            $checkStmt = $conn->prepare('SELECT null FROM url_data WHERE hash = :hash');
+            $checkStmt->execute(['hash' => $hash]);
+            if ($checkStmt->rowCount() === 0) {
+                $stmt = $conn->prepare('INSERT IGNORE INTO queue (url, hash) VALUES (:url, :hash)');
+                $stmt->execute([':url' => $url, 'hash' => $hash]);
+                if ($stmt->rowCount() > 0) {
+                    print "\t\e[92mQueueing url " . $url . "\n";
+                } else {
+                    print "\t\e[91mUrl already queued " . $url . "\n";
+                }
             } else {
-                print "\t\e[91mUrl already queued " . $url . "\n";
+                print "\t\e[91mUrl already crawled " . $url . "\n";
             }
-        } else {
-            print "\t\e[91mUrl already crawled " . $url . "\n";
         }
     }
 }
@@ -201,23 +216,23 @@ function urlHasError($url)
     $checkStmt->execute([':url' => $url, 'hash' => $hash]);
 }
 
-function saveData($urlInfo)
+function saveData($urlInfo, $url)
 {
-    global $currentUrl;
+    if ($url !== '') {
+        print "\e[96mFinished previous url - crawling: " . $url . "\n";
 
-    print "\e[96mFinished previous url - crawling: " . $currentUrl . "\n";
+        $title = mb_convert_encoding($urlInfo['title'] ?? '', 'Windows-1252', 'UTF-8');
+        $description = mb_convert_encoding($urlInfo['description'] ?? '', 'Windows-1252', 'UTF-8');
+        $language = $urlInfo['language'] ?? 'en';
+        $hash = md5($url);
 
-    $title = mb_convert_encoding($urlInfo['title'] ?? '', 'Windows-1252', 'UTF-8');
-    $description = mb_convert_encoding($urlInfo['description'] ?? '', 'Windows-1252', 'UTF-8');
-    $language = $urlInfo['language'] ?? 'en';
-    $hash = md5($currentUrl);
-
-    try {
-        $conn = initDbConnection();
-        $stmt = $conn->prepare('INSERT IGNORE INTO url_data (url, title, description, lang, hash) VALUES (:url, :title, :description, :lang, :hash)');
-        $stmt->execute([':url' => $currentUrl, ':title' => $title, ':description' => $description, ':lang' => $language, ':hash' => $hash]);
-    } catch (PDOException $e) {
-        print $e->getMessage();
+        try {
+            $conn = initDbConnection();
+            $stmt = $conn->prepare('INSERT IGNORE INTO url_data (url, title, description, lang, hash) VALUES (:url, :title, :description, :lang, :hash)');
+            $stmt->execute([':url' => $url, ':title' => $title, ':description' => $description, ':lang' => $language, ':hash' => $hash]);
+        } catch (PDOException $e) {
+            print $e->getMessage();
+        }
     }
 }
 
