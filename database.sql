@@ -64,12 +64,12 @@ DROP TABLE IF EXISTS `url_data`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `url_data` (
-  `id` int(8) NOT NULL AUTO_INCREMENT,
-  `url` varchar(2083) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `title` varchar(60) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` varchar(350) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `lang` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `hash` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id`          int(8)                                   NOT NULL AUTO_INCREMENT,
+  `url`         varchar(2083) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title`       varchar(60) COLLATE utf8mb4_unicode_ci   NOT NULL,
+  `description` varchar(350) COLLATE utf8mb4_unicode_ci  NOT NULL,
+  `lang`        varchar(10) COLLATE utf8mb4_unicode_ci   NOT NULL,
+  `hash`        varchar(32) COLLATE utf8mb4_unicode_ci   NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `url_data_hash_uindex` (`hash`),
   KEY `url_data_hash_index` (`hash`),
