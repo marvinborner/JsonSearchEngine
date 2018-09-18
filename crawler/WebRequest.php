@@ -7,7 +7,7 @@
 
 class WebRequest
 {
-    public function getContent($url)
+    public static function getContent($url): array
     {
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_USERAGENT, 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)');

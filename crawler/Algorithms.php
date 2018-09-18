@@ -47,7 +47,7 @@ class Algorithms
         foreach ($path->query('//a') as $link) {
             $linkHref = $link->getAttribute('href');
             if ($linkHref !== 'javascript:void(0)') {
-                $href = cleanUrl($linkHref);
+                $href = self::cleanUrl($linkHref);
                 $allLinks[] = $href;
             }
         }
