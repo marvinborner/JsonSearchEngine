@@ -5,7 +5,7 @@ After it has finished the information gathering, it will go on by using the firs
 # Using the crawler
 1. Create a mysql database: `mysql -u username -p` and `CREATE DATABASE database_name;`
 2. Import the `database.sql` file into your database with `mysql -u username -p database_name < database.sql`
-3. Edit `mysql_conf.inc` according to your databases credentials
+3. Edit `database/mysql_conf.inc` according to your databases credentials
 4. Run `cd crawler && php crawler.php http://dmoztools.net/` (or any other domain)
 5. For future runs, just execute `cd crawler && php crawler.php` without any arguments and it will automatically
    start with the first url of the queue
