@@ -1,4 +1,5 @@
 <?php
+header('Content-type: text/plain; charset=utf-8');
 /**
  * User: Marvin Borner
  * Date: 16/09/2018
@@ -41,7 +42,7 @@ class Database
 
     public static function alreadyCrawled($url): bool
     {
-        print "\t\e[96mChecking if url already has been crawled " . $url . "\n";
+        print "\t\e[96mChecking if url has already been crawled " . $url . "\n";
         $hash = md5($url);
         $conn = self::initDbConnection();
         $checkStmt = $conn->prepare('(SELECT null FROM url_data WHERE hash = :hash) UNION (SELECT null FROM error_url WHERE hash = :hash)');
