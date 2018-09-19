@@ -6,9 +6,9 @@ header('Content-type: text/plain; charset=utf-8');
  * Time: 23:48
  */
 
-require_once 'mysql_conf.inc';
+require_once '../database/mysqlConf.inc';
+require_once '../database/Database.php';
 require_once 'WebRequest.php';
-require_once 'Database.php';
 require_once 'Algorithms.php';
 
 class CrawlController

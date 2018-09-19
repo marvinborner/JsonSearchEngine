@@ -69,6 +69,14 @@ class Database
         $stmt->execute([':url' => $url, ':title' => $data['title'] ?? '', ':description' => $data['description'] ?? '', ':lang' => $data['lang'] ?? 'en', ':hash' => md5($url)]);
     }
 
+    public static function getUrlData($query)
+    {
+        $conn = self::initDbConnection();
+        $checkStmt = $conn->prepare('SELECT url, title, description, lang FROM url_data WHERE title LIKE :query OR description LIKE :query');
+        $checkStmt->execute([':query' => '%' . $query . '%']);
+        return $checkStmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     private static function initDbConnection(): PDO
     {
         global $servername, $dbname, $username, $password;
