@@ -32,6 +32,13 @@ module.exports = {
             })
             .catch(console.err);
     },
+    exists: (index, type, id, callback) => {
+        return esClient.exists({
+            index: index,
+            type: type,
+            id: id
+        })
+    },
     search: (index, body) => {
         return esClient.search({index: index, body: body});
     }
