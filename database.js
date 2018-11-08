@@ -5,7 +5,7 @@ const esClient = new elasticsearch.Client({
 });
 
 module.exports = {
-    index: function bulkIndex(index, type, data) {
+    index: (index, type, data) => {
         let bulkBody = [];
 
         data.forEach(item => {
@@ -32,7 +32,7 @@ module.exports = {
             })
             .catch(console.err);
     },
-    search: function search(index, body) {
+    search: (index, body) => {
         return esClient.search({index: index, body: body});
     }
 };
