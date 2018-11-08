@@ -4,12 +4,13 @@ const database = require("./database");
 const url = require("url");
 
 const crawler = new crawlService({
-    maxConnections: 10,
+    userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    rateLimit: 100,
+    maxConnections: 1, // set to 10 (and remove the line above) for faster crawling but higher probability of rate limiting (429)
     callback: (error, res, done) => {
-        console.log(res);
-
-        if (error) {
-            console.log(error);
+        if (error || res.statusCode !== 200) {
+            console.log("Error: " + error);
+            console.log("Code: " + res.statusCode);
         } else {
             const $ = res.$;
             const urlHash = crypto.createHash("sha256").update(res.request.uri.href).digest("base64");
@@ -38,9 +39,9 @@ const crawler = new crawlService({
                     }
                 });
             }
-            done();
         }
+        done();
     }
 });
 
-crawler.queue('http://stackoverflow.com');
+crawler.queue('http://wikipedia.com');
