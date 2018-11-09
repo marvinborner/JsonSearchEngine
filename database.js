@@ -32,8 +32,8 @@ module.exports = {
             })
             .catch(console.err);
     },
-    exists: (index, type, id, callback) => {
-        return esClient.exists({
+    exists: async (index, type, id) => {
+        return await esClient.exists({
             index: index,
             type: type,
             id: id
