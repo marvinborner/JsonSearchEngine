@@ -1,9 +1,9 @@
 const crawlService = require("crawler");
 const crypto = require("crypto");
 const database = require("./database");
-const url = require("url");
 
 const crawler = new crawlService({
+    skipDuplicates: true,
     userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
     rateLimit: 100, // TODO: Dynamic rate limit setting depending on errors
     maxConnections: 1, // set to 10 (and remove the line above) for faster crawling but higher probability of rate limiting (429)
@@ -16,7 +16,6 @@ const crawler = new crawlService({
             const urlHash = crypto.createHash("sha256").update(res.request.uri.href).digest("base64");
             database.exists("crawled", "site", urlHash).then(exists => {
                 if (crawler.queueSize === 0 || !exists) {
-                    console.log(crawler.queue());
                     console.log("\nCrawling: " + res.request.uri.href);
                     database.index('crawled', 'site', [
                         {
