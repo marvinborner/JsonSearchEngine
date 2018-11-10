@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "crawl": "node crawler.js"
+    "crawl": "node --max-old-space-size=4096 crawler.js"
   },
   "dependencies": {
     "cookie-parser": "~1.4.3",
